@@ -9,7 +9,7 @@
 // in the browser (especially while this repo is public). It is
 // meant to deter casual outside visitors, not to provide real
 // security. Once the repo is switched to private, this becomes
-// a more meaningful barrier.
+// a more meaningful barrier. 
 // ============================================================
 
 const LOGIN_CREDENTIALS = [
