@@ -4,6 +4,12 @@
 <meta charset="UTF-8">
 <title>Krowne | First Sale Calculator</title>
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
+<script>
+  // Auth gate: bounce to login.html unless this browser session has signed in.
+  if (sessionStorage.getItem("fpc_authed") !== "true") {
+    window.location.replace("login.html");
+  }
+</script>
 <style>
   :root{
     --krowne-black:#282828;
