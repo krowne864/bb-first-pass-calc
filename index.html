@@ -1,0 +1,872 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>Krowne | First Sale Calculator</title>
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<script>
+  // Auth gate: bounce to login.html unless this browser session has signed in.
+  if (sessionStorage.getItem("fpc_authed") !== "true") {
+    window.location.replace("login.html");
+  }
+</script>
+<style>
+  :root{
+    --krowne-black:#282828;
+    --krowne-white:#FFFFFF;
+    --krowne-off-grey:#F1F2F2;
+    --krowne-teal:#01A79D;
+    --krowne-subtext:#555555;
+    --krowne-divider:#E0E0E0;
+    --font-technical:'Helvetica Neue', Helvetica, Arial, sans-serif;
+  }
+  *{box-sizing:border-box;}
+  body{
+    margin:0;
+    font-family:var(--font-technical);
+    background:var(--krowne-off-grey);
+    color:var(--krowne-black);
+    padding:0 0 40px 0;
+  }
+  .header{
+    background:var(--krowne-black);
+    padding:22px 32px;
+    display:flex;
+    align-items:center;
+    justify-content:space-between;
+    flex-wrap:wrap;
+    gap:10px;
+  }
+  .wordmark{
+    font-family:var(--font-technical);
+    font-weight:700;
+    font-size:20px;
+    letter-spacing:0.08em;
+    color:var(--krowne-white);
+  }
+  .wordmark span{ color:var(--krowne-teal); }
+  .header .subtitle{
+    font-size:11px;
+    letter-spacing:0.15em;
+    text-transform:uppercase;
+    color:var(--krowne-teal);
+    font-weight:700;
+  }
+  .container{
+    max-width:1400px;
+    margin:0 auto;
+    padding:28px 24px 0 24px;
+  }
+  .page-title{
+    font-size:22px;
+    font-weight:700;
+    color:var(--krowne-black);
+    margin:6px 0 2px 0;
+  }
+  .page-sub{
+    font-size:12px;
+    color:var(--krowne-subtext);
+    margin-bottom:22px;
+    line-height:1.5;
+  }
+  .grid{
+    display:grid;
+    grid-template-columns: 1fr 1fr 1fr;
+    gap:22px;
+    align-items:start;
+  }
+  @media (max-width: 1180px){
+    .grid{grid-template-columns:1fr 1fr;}
+  }
+  @media (max-width: 880px){
+    .grid{grid-template-columns:1fr;}
+  }
+  .card{
+    background:var(--krowne-white);
+    border-radius:6px;
+    padding:22px 24px;
+    box-shadow:0 1px 3px rgba(0,0,0,0.08);
+  }
+  .section-header{
+    font-weight:700;
+    font-size:11px;
+    text-transform:uppercase;
+    letter-spacing:0.1em;
+    color:var(--krowne-black);
+    border-bottom:2px solid var(--krowne-teal);
+    padding-bottom:8px;
+    margin-bottom:16px;
+  }
+  .field{ margin-bottom:14px; }
+  .field label{
+    display:block;
+    font-size:11px;
+    font-weight:700;
+    color:var(--krowne-subtext);
+    text-transform:uppercase;
+    letter-spacing:0.05em;
+    margin-bottom:5px;
+  }
+  .field input, .field select{
+    width:100%;
+    padding:9px 10px;
+    font-size:14px;
+    font-family:var(--font-technical);
+    border:1px solid var(--krowne-divider);
+    border-radius:4px;
+    background:var(--krowne-white);
+    color:var(--krowne-black);
+  }
+  .field input:focus, .field select:focus{
+    outline:none;
+    border-color:var(--krowne-teal);
+  }
+  .field .hint{
+    font-size:10.5px;
+    color:var(--krowne-subtext);
+    margin-top:4px;
+    line-height:1.4;
+  }
+  .info-icon{
+    position:relative;
+    display:inline-flex;
+    align-items:center;
+    justify-content:center;
+    width:13px;
+    height:13px;
+    border-radius:50%;
+    background:var(--krowne-subtext);
+    color:var(--krowne-white);
+    font-size:9px;
+    font-weight:700;
+    font-style:italic;
+    font-family:Georgia, 'Times New Roman', serif;
+    text-transform:none;
+    letter-spacing:0;
+    margin-left:5px;
+    cursor:help;
+    vertical-align:middle;
+  }
+  .info-icon:hover{ background:var(--krowne-teal); }
+  .info-icon::after{
+    content:attr(data-tooltip);
+    position:absolute;
+    bottom:135%;
+    left:50%;
+    transform:translateX(-50%);
+    background:var(--krowne-black);
+    color:var(--krowne-white);
+    padding:7px 10px;
+    border-radius:4px;
+    font-size:11px;
+    font-weight:400;
+    font-style:normal;
+    font-family:var(--font-technical);
+    text-transform:none;
+    letter-spacing:0;
+    line-height:1.4;
+    width:230px;
+    white-space:normal;
+    box-shadow:0 2px 8px rgba(0,0,0,0.2);
+    opacity:0;
+    visibility:hidden;
+    transition:opacity 0.05s linear;
+    z-index:80;
+    pointer-events:none;
+  }
+  .info-icon::before{
+    content:"";
+    position:absolute;
+    bottom:100%;
+    left:50%;
+    transform:translateX(-50%) translateY(6px);
+    border:5px solid transparent;
+    border-top-color:var(--krowne-black);
+    opacity:0;
+    visibility:hidden;
+    transition:opacity 0.05s linear;
+    z-index:80;
+    pointer-events:none;
+  }
+  .info-icon:hover::after, .info-icon:hover::before{
+    opacity:1;
+    visibility:visible;
+  }
+  .field-required-empty{
+    background:rgba(1,167,157,0.12) !important;
+    border-color:rgba(1,167,157,0.4) !important;
+  }
+  .required-note{
+    display:flex;
+    align-items:center;
+    gap:8px;
+    background:rgba(1,167,157,0.12);
+    border:1px solid rgba(1,167,157,0.4);
+    border-radius:4px;
+    padding:9px 14px;
+    font-size:11.5px;
+    color:var(--krowne-black);
+    margin-bottom:20px;
+    line-height:1.4;
+  }
+  .result-line{
+    display:flex;
+    justify-content:space-between;
+    align-items:baseline;
+    padding:9px 0;
+    border-bottom:1px solid var(--krowne-divider);
+    font-size:13px;
+  }
+  .result-line .lbl{ color:var(--krowne-subtext); }
+  .result-line .lbl .sub{ font-size:10.5px; color:#999; margin-left:4px; }
+  .result-line .val{ font-weight:600; }
+  .result-line.subtotal{
+    border-top:2px solid var(--krowne-black);
+    border-bottom:none;
+    font-weight:700;
+    padding-top:12px;
+    margin-top:2px;
+  }
+  .result-line.grand{
+    border:none;
+    background:rgba(1,167,157,0.08);
+    margin:14px -24px -22px -24px;
+    padding:16px 24px;
+    border-radius:0 0 6px 6px;
+  }
+  .result-line.grand .lbl{
+    color:var(--krowne-black);
+    font-weight:700;
+    font-size:13px;
+    text-transform:uppercase;
+    letter-spacing:0.04em;
+  }
+  .result-line.grand .val{
+    color:var(--krowne-teal);
+    font-size:20px;
+    font-weight:700;
+  }
+  .divider-space{ height:8px; }
+  .info-note{
+    font-size:11px;
+    color:var(--krowne-subtext);
+    line-height:1.5;
+    margin-bottom:16px;
+  }
+  .compare-block{
+    margin-bottom:14px;
+    padding:14px;
+    border-radius:6px;
+    background:var(--krowne-off-grey);
+  }
+  .compare-block.highlight{
+    background:rgba(1,167,157,0.08);
+    border:1px solid rgba(1,167,157,0.3);
+  }
+  .compare-block .compare-title{
+    font-size:10.5px;
+    font-weight:700;
+    text-transform:uppercase;
+    letter-spacing:0.06em;
+    color:var(--krowne-subtext);
+    margin-bottom:6px;
+  }
+  .compare-block .compare-price{
+    font-size:22px;
+    font-weight:700;
+    color:var(--krowne-black);
+  }
+  .compare-block.highlight .compare-price{
+    color:var(--krowne-teal);
+  }
+  .compare-diff{
+    display:flex;
+    justify-content:space-between;
+    padding:10px 0 0 0;
+    margin-top:4px;
+    border-top:1px solid var(--krowne-divider);
+    font-size:11.5px;
+  }
+  .compare-diff .val{ font-weight:700; }
+  .btn-reset{
+    background:none;
+    border:1px solid var(--krowne-divider);
+    color:var(--krowne-subtext);
+    font-size:11px;
+    font-weight:700;
+    text-transform:uppercase;
+    letter-spacing:0.05em;
+    padding:9px 14px;
+    border-radius:4px;
+    cursor:pointer;
+    margin-top:6px;
+    width:100%;
+  }
+  .btn-reset:hover{ border-color:var(--krowne-teal); color:var(--krowne-teal); }
+  .footer{
+    max-width:1400px;
+    margin:26px auto 0 auto;
+    padding:16px 24px 0 24px;
+    font-size:10.5px;
+    color:var(--krowne-subtext);
+    line-height:1.6;
+    border-top:1px solid var(--krowne-divider);
+  }
+  .btn-export{
+    background:var(--krowne-teal);
+    border:none;
+    color:var(--krowne-white);
+    font-size:11px;
+    font-weight:700;
+    text-transform:uppercase;
+    letter-spacing:0.05em;
+    padding:10px 18px;
+    border-radius:4px;
+    cursor:pointer;
+  }
+  .btn-export:hover{ background:#01948b; }
+  .btn-email{
+    background:var(--krowne-black);
+    border:none;
+    color:var(--krowne-white);
+    font-size:11px;
+    font-weight:700;
+    text-transform:uppercase;
+    letter-spacing:0.05em;
+    padding:10px 18px;
+    border-radius:4px;
+    cursor:pointer;
+  }
+  .btn-email:hover{ background:#000000; }
+  .print-meta{
+    display:none;
+  }
+
+  /* ---------- PRINT / PDF EXPORT ---------- */
+  @media print{
+    body{ background:var(--krowne-white); padding:0; }
+    .header{
+      background:var(--krowne-white) !important;
+      border-bottom:3px solid var(--krowne-black);
+      padding:0 0 14px 0;
+    }
+    .wordmark{ color:var(--krowne-black); }
+    .header .subtitle{ color:var(--krowne-black); }
+    .container{ padding:20px 0 0 0; max-width:100%; }
+    .page-sub{ display:none; }
+    .grid{
+      grid-template-columns: 1fr 1fr;
+      gap:16px;
+    }
+    .card{
+      box-shadow:none;
+      border:1px solid var(--krowne-divider);
+      break-inside:avoid;
+      padding:16px 18px;
+    }
+    /* Inputs card becomes a plain read-only summary on print */
+    #inputsCard .section-header::after{ content:" (Inputs Used)"; font-weight:400; text-transform:none; letter-spacing:0; color:var(--krowne-subtext); }
+    .field .hint{ display:none; }
+    .field input, .field select{
+      border:none;
+      padding:2px 0;
+      background:transparent;
+      font-weight:600;
+      -webkit-appearance:none;
+      appearance:none;
+    }
+    select{
+      -webkit-print-color-adjust:exact;
+    }
+    .btn-reset, .btn-export, .btn-email{ display:none; }
+    .info-icon{ display:none; }
+    .field-required-empty{ background:transparent !important; border-color:var(--krowne-divider) !important; }
+    .required-note{ display:none; }
+    .print-meta{
+      display:block;
+      font-size:11px;
+      color:var(--krowne-subtext);
+      margin-bottom:14px;
+    }
+    .footer{ margin-top:16px; }
+    a{ text-decoration:none; color:inherit; }
+    @page{ size:auto; margin:14mm; }
+
+    /* Export Selling Price Build-Up + Prepared For only */
+    body.print-buildup-only #inputsCard,
+    body.print-buildup-only #comparisonCard,
+    body.print-buildup-only #bbDirectSection,
+    body.print-buildup-only .hide-on-buildup-export{
+      display:none !important;
+    }
+    body.print-buildup-only #mainGrid{
+      grid-template-columns: 1fr !important;
+      max-width:500px;
+    }
+  }
+</style>
+</head>
+<body>
+
+  <div class="header">
+    <div class="wordmark">KROWNE</div>
+    <div class="subtitle">Internal Pricing Tool</div>
+  </div>
+
+  <div class="container">
+    <div style="display:flex; align-items:flex-start; justify-content:space-between; flex-wrap:wrap; gap:12px;">
+      <div>
+        <div class="page-title">First Sale Calculator</div>
+        <div class="page-sub">Enter the Krowne cost of equipment and applicable markup, tariff, and freight to calculate the Selling Price to Dealer.</div>
+      </div>
+      <button class="btn-export" onclick="exportPdf()">EXPORT Entire Document as PDF</button>
+    </div>
+
+    <div style="display:flex; flex-wrap:wrap; gap:20px; margin-bottom:20px;">
+      <div class="field" style="max-width:340px; margin-bottom:0;">
+        <label for="quoteRef">Prepared For / Quote Reference (optional)</label>
+        <input type="text" id="quoteRef" placeholder="e.g. Boutique Hotel — Bar Program" oninput="calc()">
+      </div>
+      <div class="field hide-on-buildup-export" style="max-width:220px; margin-bottom:0;">
+        <label for="krowneSalesperson">Krowne Salesperson</label>
+        <input type="text" id="krowneSalesperson" placeholder="Name" oninput="calc()">
+      </div>
+      <div class="field hide-on-buildup-export" style="max-width:220px; margin-bottom:0;">
+        <label for="krowneSalesOrder">Krowne Sales Order Number<span class="info-icon" data-tooltip="Optional internal reference number for this quote or order.">i</span></label>
+        <input type="text" id="krowneSalesOrder">
+      </div>
+      <div class="field hide-on-buildup-export" style="max-width:260px; margin-bottom:0; margin-left:auto;">
+        <label for="htsCode">HTS Code Used for Clearance<span class="info-icon" data-tooltip="Fixed customs classification code used for this equipment category. Locked and not editable.">i</span></label>
+        <input type="text" id="htsCode" value="9403.20.00.90" readonly style="background:var(--krowne-off-grey); cursor:not-allowed;">
+      </div>
+    </div>
+
+    <div class="required-note">
+      <span>Fields highlighted in teal are required — the Selling Price to Dealer (and BB Direct Cost to Customer) will not calculate correctly until all highlighted fields are completed.</span>
+    </div>
+
+    <div class="print-meta" id="printMeta"></div>
+
+    <div class="grid" id="mainGrid">
+
+      <!-- INPUTS -->
+      <div class="card" id="inputsCard">
+
+        <div class="field">
+          <label for="cost">KROWNE COST OF EQUIPMENT FROM BB<span class="info-icon" data-tooltip="The price Krowne pays BB for this equipment. This is the baseline used for the Krowne Mark-Up calculation.">i</span></label>
+          <input type="number" id="cost" placeholder="0" step="0.01" oninput="calc()">
+        </div>
+
+        <div class="field">
+          <label for="factoryCost">Factory Cost of Equipment<span class="info-icon" data-tooltip="This represents the sale price from the factory to BB. Used only to calculate the Estimated Tariff amount.">i</span></label>
+          <input type="number" id="factoryCost" placeholder="0" step="0.01" oninput="calc()">
+        </div>
+
+        <div class="field">
+          <label for="krowneMarkup">Krowne Mark-Up<span class="info-icon" data-tooltip="Use 5% or 10% for Dealer Net Pricing. Use 20% for Consultant or End User Budgetary Pricing.">i</span></label>
+          <select id="krowneMarkup" oninput="calc()">
+            <option value="0" selected>0% — Select Mark-Up</option>
+            <option value="5">5% — Dealer Net Pricing</option>
+            <option value="10">10% — Dealer Net Pricing</option>
+            <option value="20">20% — Consultant or End User Budgetary Pricing</option>
+          </select>
+        </div>
+
+        <div class="field">
+          <label for="tariff">Estimated Tariff %<span class="info-icon" data-tooltip="General duty %, calculated against the Factory Cost of Equipment — not the Krowne Cost of Equipment from BB.">i</span></label>
+          <input type="number" id="tariff" value="10.5" step="0.1" oninput="calc()">
+          <div class="hint">General duty, applied to Factory Cost of Equipment.</div>
+        </div>
+
+        <div class="field">
+          <label for="brokerageFees">Estimated Brokerage and Misc. Fees<span class="info-icon" data-tooltip="Flat dollar amount for customs brokerage and other miscellaneous clearance fees. Added directly into the Selling Price to Dealer.">i</span></label>
+          <input type="number" id="brokerageFees" value="200" step="0.01" oninput="calc()">
+        </div>
+
+        <div class="field">
+          <label for="freight">Estimated Freight<span class="info-icon" data-tooltip="Auto-calculates as 12.5% of the Krowne Cost of Equipment from BB. Updates automatically as that field changes, but can be manually overridden.">i</span></label>
+          <input type="number" id="freight" value="0" step="0.01" data-auto-linked="true" oninput="document.getElementById('freight').dataset.autoLinked='false'; calc();">
+        </div>
+
+        <button class="btn-reset" onclick="resetForm()">Reset to Defaults</button>
+      </div>
+
+      <!-- RESULTS -->
+      <div class="card" id="buildupCard">
+        <div class="section-header">Selling Price Build-Up</div>
+
+        <div class="result-line">
+          <span class="lbl">Krowne Cost of Equipment from BB</span>
+          <span class="val" id="r-cost">$0.00</span>
+        </div>
+        <div class="result-line">
+          <span class="lbl">Krowne Mark-Up<span class="sub" id="r-krowneMarkupPct"></span></span>
+          <span class="val" id="r-krowneMarkup">$0.00</span>
+        </div>
+        <div class="result-line subtotal">
+          <span class="lbl">Equipment Sell Price to Dealer</span>
+          <span class="val" id="r-subtotal">$0.00</span>
+        </div>
+
+        <div class="divider-space"></div>
+
+        <div class="result-line">
+          <span class="lbl">Estimated Tariff<span class="sub" id="r-tariffPct"></span></span>
+          <span class="val" id="r-tariff">$0.00</span>
+        </div>
+        <div class="result-line">
+          <span class="lbl">Estimated Brokerage and Misc. Fees</span>
+          <span class="val" id="r-brokerage">$0.00</span>
+        </div>
+        <div class="result-line">
+          <span class="lbl">Estimated Freight</span>
+          <span class="val" id="r-freight">$0.00</span>
+        </div>
+
+        <div class="result-line grand">
+          <span class="lbl">Selling Price to Dealer</span>
+          <span class="val" id="r-sellingPrice">$0.00</span>
+        </div>
+
+        <button class="btn-export" style="width:100%; margin-top:14px;" onclick="exportBuildupPdf()">Export Selling Price Build-Up as PDF</button>
+        <button class="btn-email" style="width:100%; margin-top:8px;" onclick="emailBuildupSummary()">Email Selling Price Summary</button>
+      </div>
+
+      <!-- COMPARISON -->
+      <div id="comparisonCard" style="display:flex; flex-direction:column; gap:22px;">
+        <div class="card">
+          <div class="section-header">Price Comparison</div>
+          <div class="info-note">Both pricing tiers, calculated side-by-side from the same cost, tariff, and freight inputs. The Dealer Net tier shown here follows the Krowne Mark-Up selected on the left (5% or 10%); Budgetary Price to End User / Consultant always shows 20%.</div>
+
+          <div class="compare-block" id="compare-dealer">
+            <div class="compare-title" id="c-dealer-title">Dealer Net Price (10%)</div>
+            <div class="compare-price" id="c-dealer-price">$0.00</div>
+          </div>
+
+          <div class="compare-block highlight" id="compare-enduser">
+            <div class="compare-title">Budgetary Price to End User / Consultant (20%)</div>
+            <div class="compare-price" id="c-enduser-price">$0.00</div>
+          </div>
+        </div>
+
+        <div class="card" style="padding:16px 18px;">
+          <div class="section-header" style="margin-bottom:10px; padding-bottom:6px;">Difference Between Budgetary Price and Dealer Net</div>
+
+          <div class="result-line grand" style="flex-direction:column; align-items:stretch; gap:6px; margin:0 -18px -16px -18px; padding:12px 18px;">
+            <div style="display:flex; justify-content:space-between; align-items:baseline;">
+              <span class="lbl" style="font-size:11px;">Difference</span>
+              <span class="val" id="c-diff" style="font-size:16px;">$0.00</span>
+            </div>
+            <div style="display:flex; justify-content:space-between; align-items:baseline; padding-top:6px; border-top:1px solid rgba(1,167,157,0.25);">
+              <span style="font-size:10.5px; color:var(--krowne-subtext); font-weight:700; text-transform:uppercase; letter-spacing:0.04em;">% Difference</span>
+              <span id="c-diffPct" style="color:var(--krowne-teal); font-weight:700; font-size:12.5px;">0.0%</span>
+            </div>
+          </div>
+        </div>
+
+        <div class="card" style="padding:16px 18px;">
+          <div class="section-header" style="margin-bottom:10px; padding-bottom:6px;">Pass-Thru Tariff Reduction</div>
+
+          <div class="result-line grand" style="margin:0 -18px -16px -18px; padding:12px 18px;">
+            <span class="lbl" style="font-size:11px;">Difference</span>
+            <span class="val" id="tariff-passthru-amt" style="font-size:16px;">$0.00</span>
+          </div>
+        </div>
+      </div>
+
+    </div>
+
+    <div style="margin-top:26px;" id="bbDirectSection">
+      <div class="page-title" style="font-size:16px; margin-bottom:2px;">BB Direct to Customer Difference</div>
+      <div class="page-sub">Enter the cost if equipment is purchased directly from BB, plus applicable tariff and freight, to see the resulting Direct Cost to Customer and how it compares to the Equipment Sell Price to Dealer above.</div>
+
+      <div class="grid" style="grid-template-columns: 1fr 1fr;">
+        <div class="card">
+
+          <div class="field">
+            <label for="bbDirectCost">Direct Cost to Customer<span class="info-icon" data-tooltip="The price BB would charge the customer directly, without going through Krowne.">i</span></label>
+            <input type="number" id="bbDirectCost" placeholder="0" step="0.01" data-auto-linked="true" oninput="document.getElementById('bbDirectCost').dataset.autoLinked='false'; calc();">
+          </div>
+
+          <div class="field">
+            <label for="bbTariff">Estimated Tariff %<span class="info-icon" data-tooltip="Mirrors the Estimated Tariff % from the Inputs section above. Updates automatically when that field changes, but can be manually overridden here.">i</span></label>
+            <input type="number" id="bbTariff" value="10.5" step="0.1" data-auto-linked="true" oninput="document.getElementById('bbTariff').dataset.autoLinked='false'; calc();">
+            <div class="hint">Applied to Direct Cost to Customer from BB.</div>
+          </div>
+
+          <div class="field">
+            <label for="bbBrokerageFees">Estimated Brokerage and Misc. Fees<span class="info-icon" data-tooltip="Mirrors the Estimated Brokerage and Misc. Fees from the Inputs section above. Updates automatically when that field changes, but can be manually overridden here.">i</span></label>
+            <input type="number" id="bbBrokerageFees" value="200" step="0.01" data-auto-linked="true" oninput="document.getElementById('bbBrokerageFees').dataset.autoLinked='false'; calc();">
+          </div>
+
+          <div class="field">
+            <label for="bbFreight">Estimated Freight<span class="info-icon" data-tooltip="Mirrors the Estimated Freight from the Inputs section above. Updates automatically when that field changes, but can be manually overridden here.">i</span></label>
+            <input type="number" id="bbFreight" value="0" step="0.01" data-auto-linked="true" oninput="document.getElementById('bbFreight').dataset.autoLinked='false'; calc();">
+          </div>
+        </div>
+
+        <div style="display:flex; flex-direction:column; gap:22px;">
+          <div class="card">
+            <div class="section-header">BB Direct Cost Build-Up</div>
+
+            <div class="result-line">
+              <span class="lbl">Direct Cost to Customer from BB</span>
+              <span class="val" id="bb-r-cost">$0.00</span>
+            </div>
+            <div class="result-line">
+              <span class="lbl">Estimated Tariff<span class="sub" id="bb-r-tariffPct"></span></span>
+              <span class="val" id="bb-r-tariff">$0.00</span>
+            </div>
+            <div class="result-line">
+              <span class="lbl">Estimated Brokerage and Misc. Fees</span>
+              <span class="val" id="bb-r-brokerage">$0.00</span>
+            </div>
+            <div class="result-line">
+              <span class="lbl">Estimated Freight</span>
+              <span class="val" id="bb-r-freight">$0.00</span>
+            </div>
+
+            <div class="result-line grand">
+              <span class="lbl">Direct Cost to Customer</span>
+              <span class="val" id="bb-r-total">$0.00</span>
+            </div>
+          </div>
+
+          <div class="card">
+            <div class="section-header">Budgetary Price vs. Direct Cost Difference</div>
+            <div class="info-note">Compares the Budgetary Price to End User / Consultant (20%) against the Direct Cost to Customer above.</div>
+
+            <div class="result-line grand" style="flex-direction:column; align-items:stretch; gap:10px;">
+              <div style="display:flex; justify-content:space-between; align-items:baseline;">
+                <span class="lbl">Difference</span>
+                <span class="val" id="bb-vs-enduser-diff">$0.00</span>
+              </div>
+              <div style="display:flex; justify-content:space-between; align-items:baseline; padding-top:8px; border-top:1px solid rgba(1,167,157,0.25);">
+                <span style="font-size:11px; color:var(--krowne-subtext); font-weight:700; text-transform:uppercase; letter-spacing:0.04em;">% Difference</span>
+                <span id="bb-vs-enduser-diffPct" style="color:var(--krowne-teal); font-weight:700; font-size:14px;">0.0%</span>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="footer">
+    <strong>Krowne Mark-Up guide:</strong> 5% or 10% for Dealer Net Pricing &middot; 20% for Consultant or End User Budgetary Pricing.<br>
+    100 Haul Rd. &bull; Wayne, NJ 07470 &bull; (800) 631-0442 &bull; krowne.com &bull; quotes@krowne.com
+  </div>
+
+<script>
+function fmt(n){
+  if(isNaN(n)) n = 0;
+  return '$' + n.toLocaleString('en-US', {minimumFractionDigits:2, maximumFractionDigits:2});
+}
+function num(id){
+  const v = parseFloat(document.getElementById(id).value);
+  return isNaN(v) ? 0 : v;
+}
+
+// Selling price for an arbitrary markup %, holding cost/tariff/freight fixed.
+// Tariff is based on Factory Cost of Equipment; freight is based on Krowne
+// Cost of Equipment. Neither moves with the mark-up choice -- the only thing
+// that changes between 10% and 20% is the mark-up dollar amount itself,
+// dollar for dollar.
+function sellingPriceAt(cost, factoryCost, markupPct, tariffPct, freight, brokerageFees){
+  const markupAmt = cost * markupPct;
+  const subtotal = cost + markupAmt;
+  const tariffAmt = factoryCost * tariffPct;
+  return subtotal + tariffAmt + freight + brokerageFees;
+}
+
+function calc(){
+  const bbDirectCostInput = document.getElementById('bbDirectCost');
+  if(bbDirectCostInput.dataset.autoLinked !== 'false'){
+    bbDirectCostInput.value = document.getElementById('cost').value;
+  }
+
+  const freightInput = document.getElementById('freight');
+  if(freightInput.dataset.autoLinked !== 'false'){
+    const costForFreight = parseFloat(document.getElementById('cost').value);
+    freightInput.value = isNaN(costForFreight) ? '' : (costForFreight * 0.125).toFixed(2);
+  }
+
+  const bbFreightInput = document.getElementById('bbFreight');
+  if(bbFreightInput.dataset.autoLinked !== 'false'){
+    bbFreightInput.value = freightInput.value;
+  }
+
+  const bbTariffInput = document.getElementById('bbTariff');
+  if(bbTariffInput.dataset.autoLinked !== 'false'){
+    bbTariffInput.value = document.getElementById('tariff').value;
+  }
+
+  const bbBrokerageFeesInput = document.getElementById('bbBrokerageFees');
+  if(bbBrokerageFeesInput.dataset.autoLinked !== 'false'){
+    bbBrokerageFeesInput.value = document.getElementById('brokerageFees').value;
+  }
+
+  const cost = num('cost');
+  const factoryCost = num('factoryCost');
+  const krownePct = parseFloat(document.getElementById('krowneMarkup').value) / 100;
+  const tariffPct = num('tariff') / 100;
+  const brokerageFees = num('brokerageFees');
+  const freight = num('freight');
+
+  const krowneMarkupAmt = cost * krownePct;
+  const subtotal = cost + krowneMarkupAmt;
+  const tariffAmt = factoryCost * tariffPct;
+  const sellingPrice = subtotal + tariffAmt + brokerageFees + freight;
+
+  document.getElementById('r-cost').textContent = fmt(cost);
+  document.getElementById('r-krowneMarkupPct').textContent = ' (' + (krownePct*100).toFixed(0) + '%)';
+  document.getElementById('r-krowneMarkup').textContent = fmt(krowneMarkupAmt);
+  document.getElementById('r-subtotal').textContent = fmt(subtotal);
+
+  document.getElementById('r-tariffPct').textContent = ' (' + (tariffPct*100).toFixed(1) + '% of cost)';
+  document.getElementById('r-tariff').textContent = fmt(tariffAmt);
+  document.getElementById('r-brokerage').textContent = fmt(brokerageFees);
+  document.getElementById('r-freight').textContent = fmt(freight);
+
+  document.getElementById('r-sellingPrice').textContent = fmt(sellingPrice);
+
+  const selectedMarkupVal = document.getElementById('krowneMarkup').value;
+  const dealerNetPct = (selectedMarkupVal === '20') ? 0.10 : (parseFloat(selectedMarkupVal) / 100);
+
+  const dealerPrice = sellingPriceAt(cost, factoryCost, dealerNetPct, tariffPct, freight, brokerageFees);
+  const enduserPrice = sellingPriceAt(cost, factoryCost, 0.20, tariffPct, freight, brokerageFees);
+  const diff = enduserPrice - dealerPrice;
+  const diffPct = dealerPrice !== 0 ? (diff / dealerPrice) * 100 : 0;
+
+  document.getElementById('c-dealer-title').textContent = 'Dealer Net Price (' + (dealerNetPct*100).toFixed(0) + '%)';
+  document.getElementById('c-dealer-price').textContent = fmt(dealerPrice);
+  document.getElementById('c-enduser-price').textContent = fmt(enduserPrice);
+  document.getElementById('c-diff').textContent = fmt(diff);
+  document.getElementById('c-diffPct').textContent = diffPct.toFixed(1) + '%';
+
+  // BB Direct to Customer Difference
+  const bbCost = num('bbDirectCost');
+  const bbTariffPct = num('bbTariff') / 100;
+  const bbBrokerageFees = num('bbBrokerageFees');
+  const bbFreightAmt = num('bbFreight');
+
+  const bbTariffAmt = bbCost * bbTariffPct;
+  const bbTotal = bbCost + bbTariffAmt + bbBrokerageFees + bbFreightAmt;
+
+  document.getElementById('bb-r-cost').textContent = fmt(bbCost);
+  document.getElementById('bb-r-tariffPct').textContent = ' (' + (bbTariffPct*100).toFixed(1) + '% of cost)';
+  document.getElementById('bb-r-tariff').textContent = fmt(bbTariffAmt);
+  document.getElementById('bb-r-brokerage').textContent = fmt(bbBrokerageFees);
+  document.getElementById('bb-r-freight').textContent = fmt(bbFreightAmt);
+  document.getElementById('bb-r-total').textContent = fmt(bbTotal);
+
+  const tariffPassthruAmt = tariffAmt - bbTariffAmt;
+  document.getElementById('tariff-passthru-amt').textContent = fmt(tariffPassthruAmt);
+
+  const bbVsEnduserDiff = enduserPrice - bbTotal;
+  const bbVsEnduserDiffPct = bbTotal !== 0 ? (bbVsEnduserDiff / bbTotal) * 100 : 0;
+  document.getElementById('bb-vs-enduser-diff').textContent = fmt(bbVsEnduserDiff);
+  document.getElementById('bb-vs-enduser-diffPct').textContent = bbVsEnduserDiffPct.toFixed(1) + '%';
+
+  updateRequiredHighlights();
+}
+
+function setRequiredHighlight(id, isEmpty){
+  const el = document.getElementById(id);
+  el.classList.toggle('field-required-empty', isEmpty);
+}
+
+function updateRequiredHighlights(){
+  setRequiredHighlight('krowneMarkup', document.getElementById('krowneMarkup').value === '0');
+  setRequiredHighlight('cost', num('cost') === 0);
+  setRequiredHighlight('factoryCost', num('factoryCost') === 0);
+  setRequiredHighlight('tariff', num('tariff') === 0);
+  setRequiredHighlight('brokerageFees', num('brokerageFees') === 0);
+  setRequiredHighlight('freight', num('freight') === 0);
+  setRequiredHighlight('bbDirectCost', num('bbDirectCost') === 0);
+  setRequiredHighlight('bbTariff', num('bbTariff') === 0);
+  setRequiredHighlight('bbBrokerageFees', num('bbBrokerageFees') === 0);
+  setRequiredHighlight('bbFreight', num('bbFreight') === 0);
+}
+
+function resetForm(){
+  document.getElementById('cost').value = '';
+  document.getElementById('factoryCost').value = '';
+  document.getElementById('krowneMarkup').value = 0;
+  document.getElementById('tariff').value = 10.5;
+  document.getElementById('brokerageFees').value = 200;
+  document.getElementById('freight').dataset.autoLinked = 'true';
+  document.getElementById('freight').value = '';
+  document.getElementById('quoteRef').value = '';
+  document.getElementById('krowneSalesperson').value = '';
+  document.getElementById('krowneSalesOrder').value = '';
+  document.getElementById('htsCode').value = '9403.20.00.90';
+  document.getElementById('bbDirectCost').dataset.autoLinked = 'true';
+  document.getElementById('bbDirectCost').value = '';
+  document.getElementById('bbTariff').dataset.autoLinked = 'true';
+  document.getElementById('bbTariff').value = 10.5;
+  document.getElementById('bbBrokerageFees').dataset.autoLinked = 'true';
+  document.getElementById('bbBrokerageFees').value = 200;
+  document.getElementById('bbFreight').dataset.autoLinked = 'true';
+  document.getElementById('bbFreight').value = '';
+  calc();
+}
+
+function exportPdf(){
+  const ref = document.getElementById('quoteRef').value.trim();
+  const krowneRep = document.getElementById('krowneSalesperson').value.trim();
+  const orderNum = document.getElementById('krowneSalesOrder').value.trim();
+  const today = new Date().toLocaleDateString('en-US', {year:'numeric', month:'long', day:'numeric'});
+  const metaParts = ['Prepared ' + today];
+  if(ref){ metaParts.unshift(ref); }
+  if(krowneRep){ metaParts.push('Krowne Salesperson: ' + krowneRep); }
+  if(orderNum){ metaParts.push('Krowne Sales Order #: ' + orderNum); }
+  document.getElementById('printMeta').textContent = metaParts.join(' — ');
+  window.print();
+}
+
+function exportBuildupPdf(){
+  const ref = document.getElementById('quoteRef').value.trim();
+  const krowneRep = document.getElementById('krowneSalesperson').value.trim();
+  const today = new Date().toLocaleDateString('en-US', {year:'numeric', month:'long', day:'numeric'});
+  const metaParts = ['Prepared ' + today];
+  if(ref){ metaParts.unshift(ref); }
+  if(krowneRep){ metaParts.push('Krowne Salesperson: ' + krowneRep); }
+  document.getElementById('printMeta').textContent = metaParts.join(' — ');
+  document.body.classList.add('print-buildup-only');
+  window.print();
+}
+
+window.addEventListener('afterprint', function(){
+  document.body.classList.remove('print-buildup-only');
+});
+
+function emailBuildupSummary(){
+  const ref = document.getElementById('quoteRef').value.trim();
+  const krowneRep = document.getElementById('krowneSalesperson').value.trim();
+  const today = new Date().toLocaleDateString('en-US', {year:'numeric', month:'long', day:'numeric'});
+
+  const subject = 'Selling Price Build-Up' + (ref ? ' — ' + ref : '');
+
+  const lines = ['Prepared ' + today];
+  if(ref){ lines.push('Prepared For / Quote Reference: ' + ref); }
+  if(krowneRep){ lines.push('Krowne Salesperson: ' + krowneRep); }
+  lines.push('');
+  lines.push('SELLING PRICE BUILD-UP');
+  lines.push('Krowne Cost of Equipment from BB: ' + document.getElementById('r-cost').textContent);
+  lines.push('Krowne Mark-Up' + document.getElementById('r-krowneMarkupPct').textContent + ': ' + document.getElementById('r-krowneMarkup').textContent);
+  lines.push('Equipment Sell Price to Dealer: ' + document.getElementById('r-subtotal').textContent);
+  lines.push('Estimated Tariff' + document.getElementById('r-tariffPct').textContent + ': ' + document.getElementById('r-tariff').textContent);
+  lines.push('Estimated Brokerage and Misc. Fees: ' + document.getElementById('r-brokerage').textContent);
+  lines.push('Estimated Freight: ' + document.getElementById('r-freight').textContent);
+  lines.push('Selling Price to Dealer: ' + document.getElementById('r-sellingPrice').textContent);
+
+  const body = lines.join('\n');
+  window.location.href = 'mailto:?subject=' + encodeURIComponent(subject) + '&body=' + encodeURIComponent(body);
+}
+
+calc();
+</script>
+
+</body>
+</html>
